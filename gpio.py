@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import time
 import os
 #gpio sysfs doc : https://www.kernel.org/doc/Documentation/gpio/sysfs.txt
 sysfs = "/sys/class/gpio/"
@@ -15,12 +14,11 @@ class GPIO:
 		self.n = n
 		self.path = sysfs+"gpio"+str(self.n)+"/"
 
-		if self.export():
-			#you have to (re)set a direction before you can read/write the gpio
-			#(even if '$> cat direction' shows '$> out')
-			self.writeDirection(direction)
-			self.writeValue(value)
-
+		self.export()
+		#you have to (re)set a direction before you can read/write the gpio
+		#(even if '$> cat direction' shows '$> out')
+		self.writeDirection(direction)
+		self.writeValue(value)
 
 	def __del__(self):
 		self.unexport()
@@ -32,15 +30,13 @@ class GPIO:
 			try:
 				f = open(sysfs+"export","w")
 				f.write(str(self.n))
-				f.close() #write buffer to file
-				time.sleep(1) #wait for kernel
+				f.flush() #write buffer to file
 			except IOError:
 				#requested gpio probably doesn't exist
-				print("[gpio%d] export failed" % self.n)
-				return False
-
-		else:
-			return True
+				raise Exception("[gpio%d] export failed" % self.n)
+		
+		print("[gpio%d] export successful" % self.n)
+		
 
 	#reverse the effect of exporting to userspace
 	def unexport(self):
@@ -49,23 +45,20 @@ class GPIO:
 			try:
 				f = open(sysfs+"unexport","w")
 				f.write(str(self.n))
-				f.close() #write buffer to file
-				time.sleep(1) #wait for kernel
+				f.flush() #write buffer to file
 			except IOError:
 				#requested gpio probably doesn't exist
-				print("[gpio%d] unexport failed" % self.n)
-				return False
-
-		else:
-			return True
+				raise Exception("[gpio%d] unexport failed" % self.n)
+		
+		print("[gpio%d] unexport successful" % self.n)
+		
 
 	#write gpio value
 	def writeValue(self,value):
 		if value == 0 or value == 1:
 			f = open(self.path+"value","w")
 			f.write(str(value))
-			f.close() #write buffer to file
-			time.sleep(1) #wait for kernel
+			f.flush() #write buffer to file
 		else:
 			print ("[gpio%d] valid values are 0,1 , set to default" % self.n)
 
@@ -79,8 +72,7 @@ class GPIO:
 		if direction == "in" or direction == "out":
 			f = open(self.path+"direction","w")
 			f.write(direction)
-			f.close() #write buffer to file
-			time.sleep(1) #wait for kernel
+			f.flush() #write buffer to file
 			print("Direction -> %s" % direction )
 		else:
 			print ("[gpio%d] valid directions are in,out , set to default" % self.n)
@@ -89,4 +81,6 @@ class GPIO:
 	def readDirection(self):
 		f = open(self.path+"direction","r")
 		return f.read()
+
+		
 			
