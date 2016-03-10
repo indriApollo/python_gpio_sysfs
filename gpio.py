@@ -10,7 +10,7 @@ class GPIO:
 	value = 0
 	direction = "out"
 
-	def __init__(self, n, value, direction):	
+	def __init__(self, n, value, direction):
 		self.n = n
 		self.path = sysfs+"gpio"+str(self.n)+"/"
 
@@ -28,30 +28,32 @@ class GPIO:
 		#only export of not already exported
 		if not os.path.isdir(self.path):
 			try:
+				print("[gpio%d] exporting ..." % self.n)
 				f = open(sysfs+"export","w")
 				f.write(str(self.n))
 				f.flush() #write buffer to file
 			except IOError:
 				#requested gpio probably doesn't exist
 				raise Exception("[gpio%d] export failed" % self.n)
-		
+
 		print("[gpio%d] export successful" % self.n)
-		
+
 
 	#reverse the effect of exporting to userspace
 	def unexport(self):
 		#only unexport of not already unexported
 		if os.path.isdir(self.path):
 			try:
+				print("[gpio%d] unexporting ..." % self.n)
 				f = open(sysfs+"unexport","w")
 				f.write(str(self.n))
 				f.flush() #write buffer to file
-			except IOError:
+			except IOError as e:
 				#requested gpio probably doesn't exist
-				raise Exception("[gpio%d] unexport failed" % self.n)
-		
+				raise Exception("[gpio%d] unexport failed (%s)" % self.n, e.strerror)
+
 		print("[gpio%d] unexport successful" % self.n)
-		
+
 
 	#write gpio value
 	def writeValue(self,value):
@@ -82,5 +84,4 @@ class GPIO:
 		f = open(self.path+"direction","r")
 		return f.read()
 
-		
-			
+
